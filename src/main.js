@@ -9,7 +9,7 @@ import './assets/css/global.css'
 import 'element-ui/lib/theme-chalk/index.css'
 import axios from 'axios'
 // 配置请求的根路径
-axios.default.baseURL = 'http://127.0.0.1:8080/mcs/'
+axios.default.baseURL = 'http://127.0.0.1:8090/mcs/'
 Vue.prototype.$http = axios
 
 Vue.use(ElementUI)

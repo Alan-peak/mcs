@@ -6,7 +6,13 @@
         <img src="../assets/logo.png" alt />
       </div>
       <!-- 登录表单区域 -->
-      <el-form :model="loginForm" :rules="loginFormRules" ref="loginFormRef" label-width="0px" class="login_form">
+      <el-form
+        :model="loginForm"
+        :rules="loginFormRules"
+        ref="loginFormRef"
+        label-width="0px"
+        class="login_form"
+      >
         <!-- 用户名 -->
         <el-form-item prop="username">
           <el-input v-model="loginForm.username" prefix-icon="el-icon-user"></el-input>
@@ -27,15 +33,14 @@
 
 <script>
 export default {
-  data () {
+  data() {
     return {
       loginForm: {
-        username: 'ccc',
-        password: 'ccc'
+        username: 'admin',
+        password: '123456'
       },
       // 登录表单的验证规则
       loginFormRules: {
-
         username: [
           { required: true, message: '请输入登录名称', trigger: 'blur' },
           {
@@ -44,7 +49,6 @@ export default {
             message: '长度在 2 到 20 个字符',
             trigger: 'blur'
           }
-
         ],
         password: [
           { required: true, message: '请输入登录密码', trigger: 'blur' },
@@ -54,21 +58,24 @@ export default {
             message: '长度在 6 到 16 个字符',
             trigger: 'blur'
           }
-
         ]
       }
     }
   },
   methods: {
-    resetLoginForm () {
+    resetLoginForm() {
       this.$refs.loginFormRef.resetFields()
     },
-    login () {
-      this.$refs.loginFormRef.validate(valid => {
+    login() {
+      this.$refs.loginFormRef.validate(async valid => {
         if (!valid) {
           return
         }
-        this.$http.post('login', this.loginForm)
+        const { data: res } = await this.$http.post('login', this.loginForm)
+        if (res.status !== 'success') return this.$message.error('登录失败！')
+        // return this.$message.success('登录成功！')
+        window.sessionStorage.setItem('token', 'token')
+        this.$router.push('/home')
       })
     }
   }
