@@ -22,9 +22,9 @@
       <el-table :data="userList" border stripe>
         <el-table-column label="序号" type="index"></el-table-column>
         <el-table-column label="姓名" prop="username"></el-table-column>
-        <el-table-column label="邮箱" prop="email"></el-table-column>
-        <el-table-column label="电话" prop="mobile"></el-table-column>
         <el-table-column label="角色" prop="roleName"></el-table-column>
+        <el-table-column label="电话" prop="mobile"></el-table-column>
+        <el-table-column label="邮箱" prop="email"></el-table-column>
         <el-table-column label="状态" prop="mgState">
           <template slot-scope="scope">
             <el-switch v-model="scope.row.mgState" @change="userStateChange(scope.row)"></el-switch>
@@ -38,7 +38,7 @@
                 icon="el-icon-edit"
                 size="mini"
                 v-model="scope.row"
-                @click="showEditDialog(scope.row.id)"
+                @click="showEditDialog(scope.row.userId)"
               ></el-button>
             </el-tooltip>
             <el-tooltip class="item" effect="dark" content="Top Center 提示文字" placement="top">
@@ -46,7 +46,7 @@
                 type="danger"
                 icon="el-icon-delete"
                 size="mini"
-                @click="removeUserById(scope.row.id)"
+                @click="removeUserById(scope.row.userId)"
               ></el-button>
             </el-tooltip>
             <el-tooltip
@@ -82,11 +82,11 @@
         <el-form-item label="密码" prop="password">
           <el-input v-model="addForm.password"></el-input>
         </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="addForm.email"></el-input>
-        </el-form-item>
         <el-form-item label="手机" prop="mobile">
           <el-input v-model="addForm.mobile"></el-input>
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="addForm.email"></el-input>
         </el-form-item>
       </el-form>
       <!-- 底部区域 -->
@@ -102,11 +102,11 @@
         <el-form-item label="用户名">
           <el-input v-model="editForm.username" disabled></el-input>
         </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="editForm.email"></el-input>
-        </el-form-item>
         <el-form-item label="手机" prop="mobile">
           <el-input v-model="editForm.mobile"></el-input>
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="editForm.email"></el-input>
         </el-form-item>
       </el-form>
       <!-- 底部区域 -->
@@ -121,10 +121,6 @@
 <script>
 export default {
   data() {
-    // 验证邮箱的规则
-    // var checkEmail = (rule, value, callback) =>{
-    //   // const regE
-    // }
     // 验证手机号的规则
     var validateMobile = (rule, value, callback) => {
       const regMobile = /^(0|86|17951)?(13[0-9]|15[012345678]|17[678]|18[0-9]|14[57])[0-9]{8}$/
@@ -192,7 +188,7 @@ export default {
         mobile: [{ required: true, validator: validateMobile, trigger: 'blur' }]
       },
       editForm: {
-        id: '',
+        userId: '',
         username: '',
         email: '',
         mobile: ''
@@ -203,44 +199,47 @@ export default {
     this.getUserList()
   },
   methods: {
+    // 分页模糊查询获取用户信息
     async getUserList() {
-      const { data: res } = await this.$http.get('userManage/getUser', {
+      const { data: res } = await this.$http.get('userManage/getUsersForPage', {
         params: this.queryInfo
       })
-      console.log(res)
-      if (res.status !== 200) {
+      if (res.meta.status !== 200) {
         return this.$message.error('获取用户列表数据失败！')
       }
-      this.userList = res.userList
+      this.userList = res.data
       this.total = res.total
+      // 如下判断的缘由是：当将最后一页的全部数据都删除时，前端页数已经发生变化，但实际上pageNum不变，导致数据返回。后台响应也做了相关处理
+      this.queryInfo.pageNum = res.pageNum
     },
-    // 监听 pageSize 改变的事件
+    // 分页组件相关的事件监听
+    // 监听 pageSize 改变
     handleSizeChange(newSize) {
       this.queryInfo.pageSize = newSize
       this.getUserList()
     },
-    // 监听 页码值 改变的事件
+    // 监听 页码值 改变
     handleCurrentChange(newPage) {
       this.queryInfo.pageNum = newPage
       this.getUserList()
     },
-    // 监听 switch 开关状态的改变
+    // 监听 switch 开关状态的改变,更新用户的状态信息
     async userStateChange(userInfo) {
       const { data: res } = await this.$http.post(
         'userManage/updateUserState',
-        { params: { userId: userInfo, mgState: userInfo.mgState } }
+        { params: { userId: userInfo.userId, mgState: userInfo.userState } }
       )
-      if (res.status !== 200) {
-        userInfo.mgState = !userInfo.mgState
+      if (res.meta.status !== 200) {
+        userInfo.userState = !userInfo.userState
         return this.$message.error('更新用户状态失败')
       }
       return this.$message.success('更新用户状态成功')
     },
-    // 监听添加用户对话框的关闭事件
+    // 监听添加用户对话框的关闭事件，目的是重置清空表单已填信息
     addDialogClosed() {
       this.$refs.addFormRef.resetFields()
     },
-    // f
+    // 添加用户
     addUser() {
       this.$refs.addFormRef.validate(async valid => {
         if (!valid) return
@@ -248,38 +247,41 @@ export default {
           'userManage/addUser',
           this.addForm
         )
-        if (res.status !== 200) return this.$message.error('添加用户失败')
+        if (res.meta.status !== 200) return this.$message.error('添加用户失败')
         this.addDialogVisible = false
         this.getUserList()
         return this.$message.success('添加用户成功')
       })
     },
-    // 显示编辑用户的对话框
+    // 操作栏的功能处理
+    // 获取指定用户信息并显示编辑用户的对话框
     async showEditDialog(id) {
       const { data: res } = await this.$http.get(
-        'userManage/getUserByUserId/' + id
+        'userManage/getUserByUserId', { params: { userId: id } }
       )
-      if (res.status !== 200) return this.$message.error('获取用户信息失败')
+      if (res.meta.status !== 200) return this.$message.error('获取用户信息失败')
       this.editForm = res.data
       this.editDialogVisible = true
     },
     editDialogClosed() {
       this.$refs.editFormRef.resetFields()
     },
+    // 保存更改后的用户信息
     editUserInfo() {
       this.$refs.editFormRef.validate(async valid => {
         if (!valid) return
         const { data: res } = await this.$http.post(
-          'userManage/updateUserById',
+          'userManage/updateUserByUserId',
           this.editForm
         )
-        if (res.status !== 200) return this.$message.error('更新用户失败')
-        this.addDialogVisible = false
+        if (res.meta.status !== 200) return this.$message.error('更新用户失败')
+        this.editDialogVisible = false
         this.getUserList()
         return this.$message.success('更新用户成功')
       })
     },
-    async removeUserById(userId) {
+    // 移除指定用户信息
+    async removeUserById(id) {
       const confirmResult = await this.$confirm('此操作将永久删除该用户, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -288,8 +290,9 @@ export default {
       if (confirmResult === 'cancel') {
         return this.$message.error('已取消删除')
       }
-      const { data: res } = this.http.delete('userManage/' + userId)
-      if (res.status !== 200) return this.$message.error('删除失败')
+      const { data: res } = await this.$http.post('userManage/deleteUserByUserId', { userId: id })
+      if (res.meta.status !== 200) return this.$message.error('删除失败')
+      this.getUserList()
       return this.$message.success('删除成功')
     }
   }

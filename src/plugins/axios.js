@@ -7,9 +7,10 @@ import axios from 'axios'
 // axios.defaults.baseURL = process.env.baseURL || process.env.apiUrl || '';
 // axios.defaults.headers.common['Authorization'] = AUTH_TOKEN;
 // axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
+// axios.defaults.baseURL = 'http://localhost:8090/wyw'
 
 let config = {
-  // baseURL: process.env.baseURL || process.env.apiUrl || ""
+  baseURL: 'http://localhost:8090/wyw'
   // timeout: 60 * 1000, // Timeout
   // withCredentials: true, // Check cross-site Access-Control
 }
@@ -19,6 +20,8 @@ const _axios = axios.create(config)
 _axios.interceptors.request.use(
   function (config) {
     // Do something before request is sent
+    config.headers.Authorization = window.sessionStorage.getItem('token')
+    console.log(config)
     return config
   },
   function (error) {
@@ -41,6 +44,7 @@ _axios.interceptors.response.use(
 
 Plugin.install = function (Vue, options) {
   Vue.axios = _axios
+  Vue.prototype.$http = _axios
   window.axios = _axios
   Object.defineProperties(Vue.prototype, {
     axios: {

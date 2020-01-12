@@ -20,12 +20,12 @@
             <!-- 一级菜单的模板区域 -->
             <template slot="title">
               <i :class="iconsObj[item.id]"></i>
-              <span>{{item.authMenu}}</span>
+              <span>{{item.authName}}</span>
             </template>
             <el-menu-item :index="'/' + subItem.path" v-for="subItem in item.children" :key="subItem.id" @click="saveNavStatus('/' + subItem.path)">
               <template slot="title">
                 <i class="el-icon-menu"></i>
-                <span>{{subItem.authMenu}}</span>
+                <span>{{subItem.authName}}</span>
               </template>
             </el-menu-item>
           </el-submenu>
@@ -48,9 +48,9 @@ export default {
       iconsObj: {
         125: 'el-icon-s-custom',
         103: 'el-icon-s-data',
-        101: 'iconfont icon-shangpin',
-        102: 'iconfont icon-danju',
-        145: 'iconfont icon-baobiao'
+        101: 'el-icon-s-claim',
+        102: 'el-icon-s-marketing',
+        145: 'el-icon-s-platform'
       },
       isCollapse: false,
       activePath: ''
@@ -66,10 +66,10 @@ export default {
       this.$router.push('/login')
     },
     async getMenuList() {
-      const { data: res } = await this.$http.get('sysMenu/getSysMenu')
-      if (res.status !== 200) return this.$message.error(res.msg)
+      const { data: res } = await this.$http.get('sysMenu/getAll')
+      if (res.meta.status !== 200) return this.$message.error(res.meta.msg)
+      console.log(res.data)
       this.menuList = res.data
-      console.log(res)
     },
     toggleCollapse() {
       this.isCollapse = !this.isCollapse
